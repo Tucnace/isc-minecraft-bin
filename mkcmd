@@ -7,7 +7,7 @@ if [[ $# -eq 1 ]]; then
 	else
 		echo -ne "#!/bin/bash\n\n" > "$CMD";
 		chmod +x "$CMD";
-		editcmd "$1"
+		editcmd "$1" <<< "created command $1";
 	fi
 else
 	echo "Usage: $(basename $0) <CMD>" >&2
