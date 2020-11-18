@@ -1,0 +1,34 @@
+#!/bin/bash
+
+DIR=/home/paper_server/logs;
+
+function latest() {
+	less "$@" "$DIR/latest.log";
+}
+
+HELP=0
+if [[ $# -eq 0 ]]; then
+	latest +F;
+elif [[ $# -eq 1 ]]; then
+	if [[ $1 -eq 0 ]]; then
+		latest
+	elif [[ $1 -gt 0 ]]; then
+		LINE=$1;
+		((++LINE));
+		FILE=$(ls "$DIR"/????-??-??-*.log.gz | tail -n $LINE | head -n 1);
+		gzip -d "$FILE"
+		FILE="${FILE%.gz}"
+		less "$FILE"
+		gzip "$FILE"
+	elif [[ "$1" == --help ]]; then
+		HELP=1
+	fi
+else
+	HELP=1
+fi
+
+
+
+if [[ $HELP -eq 1 ]]; then
+	echo "Usage: $(basename $0) [INDEX]";
+fi

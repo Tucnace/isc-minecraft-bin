@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [[ $# -eq 0 ]]; then
+        echo "Usage: $(basename 0) CMD..." >&2;
+else
+	for I in "$@"; do
+	        CMD="~/bin/$I";
+        	if [[ -f "$CMD" ]]; then
+                	rm "$CMD";
+	        else
+        	        echo "Error: Command $1 does not exist" >&2;
+	        fi;
+	done;
+fi;
+

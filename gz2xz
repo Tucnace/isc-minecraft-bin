@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [[ $# -eq 0 ]]; then
+	echo "Usage: $(basename $0) ...<FILE>" >&2;
+else
+	for F in "$@"; do
+		gzip -d "$F";
+		F="${F%.tgz}";
+		F="${F%.tar.gz}";
+		xz "$F.tar";
+		touch -mt $(sed -E 's/world-(........)-(..):(..):(..).tar.xz/\1\2\3.\4/' <<< "$F") "$F";
+	done;
+fi

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [[ $# -eq 1 ]]; then
+	CMD=~/bin/$1;
+        if [[ -f "$CMD" ]]; then
+		nano "$CMD";
+	else
+		echo "Error: Command $1 does not exist" >&2;
+	fi
+else
+        echo "Usage: $(basename $0) <CMD>" >&2;
+fi

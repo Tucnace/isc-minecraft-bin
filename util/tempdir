@@ -1,0 +1,13 @@
+if [[ -z "$TEMPDIR" ]]; then
+TEMPDIR=
+cleanup () {
+  trap - EXIT;
+  if [ -n "$TEMPDIR" ] ; then rm -rf "$TEMPDIR"; fi
+  if [ -n "$1" ]; then trap - $1; kill -$1 $$; fi
+}
+TEMPDIR=$(mktemp -d);
+trap 'cleanup' EXIT;
+trap 'cleanup HUP' HUP;
+trap 'cleanup TERM' TERM;
+trap 'cleanup INT' INT;
+fi

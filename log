@@ -1,0 +1,41 @@
+#!/bin/bash
+
+DIR=/home/paper_server/logs
+
+function usage() {
+	echo "Usage: $(basename $0) [INDEX]" >&2;
+}
+
+function latest() {
+	less "$@" "$DIR/latest.log"
+}
+
+HELP=0
+if [[ $# -eq 0 ]]; then
+	latest +F;
+elif [[ $# -eq 1 ]]; then
+	if [[ "$1" == --help ]]; then
+		HELP=1
+	elif [[ $1 -eq 0 ]]; then
+		latest;
+	elif [[ $1 -gt 0 ]]; then
+		LINE=$1;
+		FILE=$(ls "$DIR"/????-??-??-*.log.gz | tail -n $LINE | head -n 1);
+		gzip -d "$FILE"
+		FILE="${FILE%.gz}"
+		less "$FILE"
+		gzip "$FILE"
+	else
+		usage;
+	fi;
+else
+	usage;
+fi;
+
+if [[ $HELP -eq 1 ]]; then
+	usage;
+	exec 1>&2;
+	echo "";
+	echo "INDEX is positive integer. Logs are indexed relatively to the latest one."
+	echo "The latest log has index zero. The higher index the older log file."
+fi;

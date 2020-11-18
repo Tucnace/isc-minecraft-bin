@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [[ $# -eq 1 ]]; then
+	CMD=~/bin/$1;
+	if [[ -f "$CMD" ]]; then
+		echo "Error: Command $1 already exists" >&2;
+	else
+		echo -ne "#!/bin/bash\n\n" > "$CMD";
+		chmod +x "$CMD";
+		editcmd "$1"
+	fi
+else
+	echo "Usage: $(basename $0) <CMD>" >&2
+fi

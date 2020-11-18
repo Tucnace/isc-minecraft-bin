@@ -1,0 +1,12 @@
+#!/bin/bash
+
+while read F; do
+	D=$(dirname "$F");
+	if [[ "$DIR" != "$D" ]]; then
+		DIR="$D";
+		echo "$DIR";
+	fi;
+	sudo rm -r "$F";
+done < <(find .git -type f);
+
+rm -r .git

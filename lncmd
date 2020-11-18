@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [[ $# -ne 2 ]]; then
+	echo "Usage: $(basename $0) SOURCE TARGET" >&2;
+else
+	if [[ -f "~/bin/$2" ]]; then
+		echo "Error: Command $2 already exists" >&2;
+	else
+		ln -s "$1" "~/bin/$2";
+	fi;
+fi;
