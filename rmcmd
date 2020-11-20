@@ -1,5 +1,11 @@
 #!/bin/bash
 
+function commit() {
+	git add .;
+	git commit -m "removed $CMD ${DONE[*]}";
+	git push;
+}
+
 if [[ $# -eq 0 ]]; then
         echo "Usage: $(basename 0) CMD..." >&2;
 else
@@ -18,9 +24,7 @@ else
 		CMD="command"
 		[[ ${DONE[#]} -gt 1 ]] && CMD="${CMD}s";
 		cd ~/bin;
-		git add . &>/dev/null;
-		git commit -m "removed $CMD ${DONE[*]}" &>/dev/null;
-		git push &>/dev/null;
+		commit &>/dev/null &
 	fi;
 fi;
 
