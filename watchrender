@@ -1,0 +1,39 @@
+#!/bin/bash
+
+PREC=1;
+LOG=/home/paper_server/logs/latest.log;
+DYNMAP=/home/paper_server/plugins/dynmap;
+
+
+TILESPATH="$(grep 'tilespath:' "$DYNMAP/configuration.txt" | sed -E 's/(^ *| *$)//g')";
+TILES="$DYNMAP/$TILESPATH";
+MULT=100;
+DONE=$MULT;
+LAST=0;
+if [[ $PREC -gt 0 ]]; then
+	for I in {1..$PREC}; do
+		MULT=${MULT}0;
+	done;
+	DONE=$(echo $MULT | sed 's/^100(0*)$/100.\1/);
+fi
+while true; do
+	sleep 1;
+	LINE=$(tail -n 100 "$LOG" \
+		| grep -E 'Full render of map \'[^\']+\' of \'[^\]+\' in progress - \d+ tiles rendered'
+		| tail -n 1);
+	[[ -z "$LINE" ]] && break;
+	CURRENT=$(echo "$LINE" | grep -Eo '\d+ tiles' | grep -Eo '\d+');
+	[[ $CURRENT -eq $LAST ]] && continue;
+	TEMP=( $(echo "$LINE" | grep -Eo '\'[^\']+\'' | grep -Eo '[^\']+') );
+	MAP="${TEMP[0]}";
+	WORLD="${TEMP[1]}";
+	MAPTILES="$TILES/$WORLD/$MAP";
+	TOTAL=$(ls "$MAPTILES"/*/* | wc -l);
+	PROGRESS=$(($CURRENT*$MULT/$TOTAL));
+	while [[ $(echo $PROGRESS | wc -c) -le $PREC ]]; do
+		PROGRESS=0$PROGRESS;
+	done;
+	PROGRESS=$(echo $PROGRESS | sed -E "s/^(\d+)(\d{$PREC})$/\1.\2/);
+	echo "Full render of $WORLD:$MAP - $CURRENT / $TOTAL ($PROGRESS);
+	[[ "$PROGRESS" == "$DONE" ]] && break;
+done;
