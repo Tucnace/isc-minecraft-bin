@@ -1,14 +1,18 @@
 #!/bin/bash
 
+function commit() {
+	git add .;
+	git commit -m "$DESC";
+	git push;
+}
+
 if [[ $# -eq 1 ]]; then
 	CMD=~/bin/$1;
         if [[ -f "$CMD" ]]; then
 		nano "$CMD";
 		read -p "Change description: " DESC;
 		cd ~/bin;
-		git add . &>/dev/null
-		git commit -m "$DESC" &>/dev/null
-		git push &>/dev/null
+		commit &>/dev/null &
 	else
 		echo "Error: Command $1 does not exist" >&2;
 	fi
