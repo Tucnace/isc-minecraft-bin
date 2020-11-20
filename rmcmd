@@ -18,9 +18,9 @@ else
 		CMD="command"
 		[[ ${DONE[#]} -gt 1 ]] && CMD="${CMD}s";
 		cd ~/bin;
-		git add .;
-		git commit -m "removed $CMD ${DONE[*]}";
-		git push;
+		git add . >/dev/null;
+		git commit -m "removed $CMD ${DONE[*]}" >/dev/null;
+		git push >/dev/null;
 	fi;
 fi;
 
