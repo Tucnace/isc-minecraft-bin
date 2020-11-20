@@ -1,39 +1,131 @@
 #!/bin/bash
 
-PREC=1;
-LOG=/home/paper_server/logs/latest.log;
-DYNMAP=/home/paper_server/plugins/dynmap;
+SERVER=/home/paper_server;
+LOG="$SERVER/logs/latest.log";
+DYNMAP="$SERVER/plugins/dynmap";
+CONFIG="$DYNMAP/configuration.txt";
+WORLDS="$DYNMAP/worlds.txt";
 
+TTY=$(tty);
 
-TILESPATH="$(grep 'tilespath:' "$DYNMAP/configuration.txt" | sed -E 's/(^ *| *$)//g')";
+if [[ $# -ge 1 ]]; then
+	PREC=$1;
+else
+	PREC=2;
+fi;
+
+function swap() {
+	TEMP="${!1}";
+	eval $1="\"${!2}\"";
+	eval $2="\"$TEMP\"";
+}
+
+function nth() {
+	N=$1;
+	for I in $(eval echo {1..$N}); do
+		shift;
+	done;
+	echo $1;
+}
+
+function print_assoc() {
+	echo -n '(';
+	for I in $(eval echo "\"\${!$1[@]}\""); do
+		eval DATA="\"\${$1[$I]}\"";
+		DATA="${DATA//\\/\\\\}";
+		echo -n " [$I]=\"${DATA//\"/\\\"}\"";
+	done;
+	echo ' )';
+}
+
+declare -Ag PREFIX_MAP
+function map_prefix() {
+	W="$1";
+	M="$2";
+	if [[ -n "${PREFIX_MAP[$W]}" ]]; then
+		declare -A PREFIX_MAP2=${PREFIX_MAP[$W]};
+		if [[ -n "${PREFIX_MAP2[$M]}" ]]; then
+			eval $3="\"${PREFIX_MAP2[$M]}\"";
+			return;
+		fi;
+	else
+		declare -A PREFIX_MAP2;
+	fi;
+	WNAMEPAT='^ *- *name:';
+	MAPSPAT='^ +maps:';
+	CLASSPAT='^ +- *class:';
+	MNAMEPAT='^ +name:';
+	MPREFIXPAT='^ +prefix:';
+	W=$(grep -E "$WNAMEPAT *$1 *\$" "$WORLDS" | head -n 1);
+	WP=0;
+	MP=0;
+	NAME='';
+	PREFIX='';
+	IFS2='';
+	swap IFS IFS2
+	while read L; do
+		swap IFS IFS2;
+		echo "$L" | grep -Eq "$WNAMEPAT" && WP=0;
+		[[ "$L" == "$W" ]] && WP=1;
+		if [[ $WP -eq 1 && $MP -eq 1 ]]; then
+			if echo "$L" | grep -Eq "$CLASSPAT"; then
+				NAME='';
+				PREFIX='';
+			fi;
+			if echo "$L" | grep -Eq "$MNAMEPAT"; then
+				NAME="$(echo "$L" | sed -E "s/($MNAMEPAT *| *\$)//g")";
+			fi
+			if echo "$L" | grep -Eq "$MPREFIXPAT"; then
+				PREFIX="$(echo "$L" | sed -E "s/($MPREFIXPAT *| *\$)//g")";
+			fi
+			if [[ -n "$NAME" && -n "$PREFIX" && "$NAME" == "$2" ]]; then
+				PREFIX_MAP2[$NAME]=$PREFIX
+				PREFIX_MAP[$WORLD]="$(print_assoc PREFIX_MAP2)";
+				eval $3="\"$PREFIX\"";
+				return;
+			fi;
+		fi;
+		echo "$L" | grep -Eq "$MAPSPAT" && MP=1;
+		swap IFS IFS2;
+	done < "$WORLDS";
+	swap IFS IFS2;
+	return 1;
+}
+
+TPATHPAT=' *tilespath:';
+TILESPATH="$(grep "$TPATHPAT" "$DYNMAP/configuration.txt" | sed -E "s/($TPATHPAT *| *\$)//g")";
 TILES="$DYNMAP/$TILESPATH";
 MULT=100;
 DONE=$MULT;
 LAST=0;
 if [[ $PREC -gt 0 ]]; then
-	for I in {1..$PREC}; do
-		MULT=${MULT}0;
+	for I in $(eval echo {1..$PREC}); do
+		eval MULT="\${MULT}0";
 	done;
-	DONE=$(echo $MULT | sed 's/^100(0*)$/100.\1/);
+	DONE=$(echo $MULT | sed -E 's/^100(0*)$/100.\1/');
 fi
 while true; do
-	sleep 1;
+	[[ $LAST -ne 0 ]] && sleep 1;
 	LINE=$(tail -n 100 "$LOG" \
-		| grep -E 'Full render of map \'[^\']+\' of \'[^\]+\' in progress - \d+ tiles rendered'
+		| grep -E "Full render of map '[^']*' of '[^']*' in progress - [0-9]* tiles rendered" \
 		| tail -n 1);
 	[[ -z "$LINE" ]] && break;
-	CURRENT=$(echo "$LINE" | grep -Eo '\d+ tiles' | grep -Eo '\d+');
+	CURRENT=$(echo "$LINE" | grep -Eo '[0-9]+ tiles' | grep -Eo '[0-9]+');
 	[[ $CURRENT -eq $LAST ]] && continue;
-	TEMP=( $(echo "$LINE" | grep -Eo '\'[^\']+\'' | grep -Eo '[^\']+') );
+	LAST=$CURRENT
+	TEMP=( $(echo "$LINE" | grep -Eo "'[^']+'" | grep -Eo "[^']+") );
 	MAP="${TEMP[0]}";
 	WORLD="${TEMP[1]}";
-	MAPTILES="$TILES/$WORLD/$MAP";
-	TOTAL=$(ls "$MAPTILES"/*/* | wc -l);
+	map_prefix "$WORLD" "$MAP" MAPDIR;
+	MAPTILES="$TILES/$WORLD/$MAPDIR";
+	TOTAL=$(ls "$MAPTILES"/* | wc -l);
 	PROGRESS=$(($CURRENT*$MULT/$TOTAL));
-	while [[ $(echo $PROGRESS | wc -c) -le $PREC ]]; do
-		PROGRESS=0$PROGRESS;
+	while [[ ${#PROGRESS} -le $PREC ]]; do
+		eval PROGRESS="0\$PROGRESS";
 	done;
-	PROGRESS=$(echo $PROGRESS | sed -E "s/^(\d+)(\d{$PREC})$/\1.\2/);
-	echo "Full render of $WORLD:$MAP - $CURRENT / $TOTAL ($PROGRESS);
+	[[ $PREC -gt 0 ]] \
+	&& PROGRESS=$(echo $PROGRESS | sed -E 's/^([0-9]+)([0-9]{'$PREC'})$/\1.\2/');
+	echo -ne "\rFull render of $WORLD:$MAP - $CURRENT / $TOTAL ($PROGRESS %)";
 	[[ "$PROGRESS" == "$DONE" ]] && break;
 done;
+echo '';
