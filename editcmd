@@ -2,17 +2,21 @@
 
 function commit() {
 	git add .;
-	git commit -m "$DESC";
+	git commit -m "$1";
 	git push;
 }
 
 if [[ $# -eq 1 ]]; then
 	CMD=~/bin/$1;
         if [[ -f "$CMD" ]]; then
+		T=$(mktemp);
+		cat "$CMD" > "$T";
 		nano "$CMD";
-		read -p "Change description: " DESC;
-		cd ~/bin;
-		commit &>/dev/null &
+		if ! diff -q "$T" "$CMD" &>/dev/null; then
+			read -p "Change description: " DESC;
+			cd ~/bin;
+			commit "$DESC" &>/dev/null &
+		fi
 	else
 		echo "Error: Command $1 does not exist" >&2;
 	fi
