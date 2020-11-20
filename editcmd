@@ -6,9 +6,9 @@ if [[ $# -eq 1 ]]; then
 		nano "$CMD";
 		read -p "Change description: " DESC;
 		cd ~/bin;
-		git add . >/dev/null
-		git commit -m "$DESC" >/dev/null
-		git push >/dev/null
+		git add . &>/dev/null
+		git commit -m "$DESC" &>/dev/null
+		git push &>/dev/null
 	else
 		echo "Error: Command $1 does not exist" >&2;
 	fi
