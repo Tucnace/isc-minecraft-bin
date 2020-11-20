@@ -104,7 +104,7 @@ if [[ $PREC -gt 0 ]]; then
 	done;
 	DONE=$(echo $MULT | sed -E 's/^100(0*)$/100.\1/');
 fi
-MAXMSG=0;
+LASTMSG=0;
 while true; do
 	[[ $LAST -ne 0 ]] && sleep 1;
 	LINE=$(tail -n 100 "$LOG" \
@@ -128,13 +128,12 @@ while true; do
 	&& PROGRESS=$(echo $PROGRESS | sed -E 's/^([0-9]+)([0-9]{'$PREC'})$/\1.\2/');
 	MSG="$(echo -e "\rFull render of $WORLD:$MAP - rendered $CURRENT of $TOTAL expected tiles ($PROGRESS %)")";
 	echo -n "$MSG";
-	if [[ ${#MSG} -lt $MAXMSG ]]; then
-		for I in $(eval echo {1..$(($MAXMSG-${#MSG}))}); do
+	if [[ ${#MSG} -lt $LASTMSG ]]; then
+		for I in $(eval echo {1..$(($LASTMSG-${#MSG}))}); do
 			echo -n ' ';
 		done;
-	else
-		MAXMSG=${#MSG};
 	fi;
+	MAXMSG=${#MSG};
 	[[ "$PROGRESS" == "$DONE" ]] && break;
 done;
 echo '';
